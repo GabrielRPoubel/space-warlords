@@ -34,7 +34,7 @@ const TABELA_RECURSOS = {
     ['H2O', 'Água', 55, 70], ['Si', 'Silício', 8, 14],
     ['Fe', 'Ferro', 5, 10], ['Mg', 'Magnésio', 3, 7],
     ['NaCl', 'Sal', 2, 5], ['Ca', 'Cálcio', 1, 3],
-    ['Al', 'Alumínio', 1, 2.5],
+    ['Al', 'Alumínio', 1, 2.5], ['C', 'Carbono', 0.5, 2],
   ],
   gasoso: [
     ['H', 'Hidrogênio', 69, 74], ['He', 'Hélio', 23, 27],

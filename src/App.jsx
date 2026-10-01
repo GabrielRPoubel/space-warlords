@@ -1,5 +1,5 @@
 import './App.css'
-import GalaxyMap from './game/GalaxyMap.jsx'
+import GalaxyMap from './components/GalaxyMap.jsx'
 
 function App() {
   return (

@@ -5,6 +5,7 @@
 
 import { mulberry32 } from './galaxy.js'
 import { hashStr } from './system.js'
+import { gerarCulturas } from './cultures.js'
 
 export const TIPOS = [
   'imperio',
@@ -37,16 +38,7 @@ export const PALETA = [
   '#6a7cff', '#d29a6b', '#b8b83c', '#9fb3c8', '#f0f0f0',
 ]
 
-const SIL = {
-  imperio: [['Val', 'Mor', 'Drak', 'Kor', 'Bren', 'Tarn', 'Rav', 'Kaz'], ['dor', 'nia', 'gar', 'thia'], ['', ' Prime', ' Major']],
-  federacao: [['Al', 'Bel', 'Cor', 'Del', 'Eri', 'Gal', 'Hel', 'Vel'], ['ia', 'on', 'ara', 'is'], ['']],
-  republica: [['Aqu', 'Bel', 'Cas', 'Dor', 'Fab', 'Jul', 'Mar', 'Tib'], ['ia', 'us', 'ana'], ['', ' Nova']],
-  juntaComercial: [['Vey', 'Krup', 'Zan', 'Merk', 'Sol', 'Fen', 'Dal', 'Bex'], ['ex', 'or', 'il'], ['', ' & Cia']],
-  juntaMilitar: [['Krag', 'Vost', 'Dren', 'Ghar', 'Mok', 'Str', 'Tuz', 'Brak'], ['ov', 'ak', 'ur'], ['']],
-  teocracia: [['Aman', 'Thul', 'Ser', 'El', 'Zaf', 'Ori', 'Shan', 'Ul'], [`'thul`, `'far`, 'iel', 'os'], ['']],
-  anarquista: [['Liv', 'Rav', 'Noa', 'Zel', 'Isk', 'Paz', 'Rum', 'Vik'], ['a', 'e', 'o'], ['', ' Livre']],
-  tecnocracia: [['TX', 'NX', 'QV', 'ZK', 'PR', 'WL'], null, null],
-}
+const TECNO_LETRAS = ['TX', 'NX', 'QV', 'ZK', 'PR', 'WL']
 
 const GANGUES = ['Ratos', 'Cães', 'Abutres', 'Chacais', 'Hienas', 'Lobos']
 
@@ -174,23 +166,23 @@ const MOTIVOS = [
   'divergência ideológica profunda',
 ]
 
-function nomeNacao(tipo, rand) {
+function nomeNacao(tipo, cultura, rand) {
   if (tipo === 'pirata') {
     const g = GANGUES[Math.floor(rand() * GANGUES.length)]
-    return `${g} de ${nomeBase('anarquista', rand)}`
+    return `${g} de ${nomeBase(cultura.sil, rand)}`
   }
   if (tipo === 'tecnocracia') {
-    const [letras] = SIL.tecnocracia
-    return `Coletivo ${letras[Math.floor(rand() * letras.length)]}-${1 + Math.floor(rand() * 90)}`
+    return `Coletivo ${TECNO_LETRAS[Math.floor(rand() * TECNO_LETRAS.length)]}-${1 + Math.floor(rand() * 90)}`
   }
-  return `${TITULO[tipo]} ${nomeBase(tipo, rand)}`
+  return `${TITULO[tipo]} ${nomeBase(cultura.sil, rand)}`
 }
 
-function nomeBase(tipo, rand) {
-  const [ini, meio, fim] = SIL[tipo]
+function nomeBase(sil, rand) {
+  const { ini, meio } = sil
   let n = ini[Math.floor(rand() * ini.length)]
-  if (meio && rand() < 0.6) n += meio[Math.floor(rand() * meio.length)]
-  if (fim) n += fim[Math.floor(rand() * fim.length)]
+  if (rand() < 0.6) n += meio[Math.floor(rand() * meio.length)]
+  const fins = ['', ' Prime', ' Nova', ' Livre']
+  if (rand() < 0.25) n += fins[1 + Math.floor(rand() * (fins.length - 1))]
   return n
 }
 
@@ -238,11 +230,86 @@ export function fronteirasCruzam(h1, h2) {
   return false
 }
 
+// fronteira concreta: convex hull (Andrew) dos sistemas + respiro.
+// <3 pontos distintos → octógono ao redor do centroide.
+export function fronteiraDe(pts) {
+  const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length
+  const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length
+  const cross = (o, a, b) =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+  const ord = [...pts].sort((a, b) => a.x - b.x || a.y - b.y)
+  let casco
+  if (ord.length < 3) {
+    let r = 0.035
+    if (ord.length === 2)
+      r = Math.max(0.035, Math.hypot(ord[1].x - ord[0].x, ord[1].y - ord[0].y) / 2 + 0.02)
+    casco = Array.from({ length: 8 }, (_, i) => {
+      const a = (i / 8) * Math.PI * 2
+      return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r }
+    })
+  } else {
+    const inf = []
+    for (const p of ord) {
+      while (inf.length >= 2 && cross(inf[inf.length - 2], inf[inf.length - 1], p) <= 0)
+        inf.pop()
+      inf.push(p)
+    }
+    const sup = []
+    for (let i = ord.length - 1; i >= 0; i--) {
+      const p = ord[i]
+      while (sup.length >= 2 && cross(sup[sup.length - 2], sup[sup.length - 1], p) <= 0)
+        sup.pop()
+      sup.push(p)
+    }
+    inf.pop()
+    sup.pop()
+    casco = [...inf, ...sup]
+    if (casco.length < 3) {
+      // colineares: octógono cobrindo a extensão
+      const span = Math.max(
+        0.02,
+        ...ord.map((p) => Math.hypot(p.x - cx, p.y - cy)),
+      )
+      casco = Array.from({ length: 8 }, (_, i) => {
+        const a = (i / 8) * Math.PI * 2
+        return { x: cx + Math.cos(a) * (span + 0.02), y: cy + Math.sin(a) * (span + 0.02) }
+      })
+    }
+  }
+  // respiro: empurra cada vértice 0.015 p/ fora do centroide
+  return casco.map((p) => {
+    const dx = p.x - cx
+    const dy = p.y - cy
+    const d = Math.hypot(dx, dy) || 1
+    return { x: +(p.x + (dx / d) * 0.015).toFixed(4), y: +(p.y + (dy / d) * 0.015).toFixed(4) }
+  })
+}
+
 export function gerarNacoes(seed, stars) {
   const rand = mulberry32((seed ^ 0x51ab3f29) >>> 0)
   const n = 9 + Math.floor(rand() * 7) // 9-15
   const reivindicadas = new Set()
   const nacoes = []
+  // 1 cultura por nação, sem repetir na galáxia (84 opções)
+  let baralho = gerarCulturas(seed)
+  for (let i = baralho.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    ;[baralho[i], baralho[j]] = [baralho[j], baralho[i]]
+  }
+  // garante ≥1 cultura de cada região: 1º de cada região vai p/ frente
+  // (partição estável, sem consumir RNG: não altera o stream)
+  {
+    const vistas = new Set()
+    const frente = []
+    const resto = []
+    for (const c of baralho) {
+      if (!vistas.has(c.regiao)) {
+        vistas.add(c.regiao)
+        frente.push(c)
+      } else resto.push(c)
+    }
+    baralho = frente.concat(resto)
+  }
   const nomesUsados = new Map()
   const simbolosUsados = {}
   const ROM = ['', '', ' II', ' III', ' IV', ' V', ' VI']
@@ -336,9 +403,17 @@ export function gerarNacoes(seed, stars) {
       Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.y - cy))) + 0.03
     nacoes.push({
       id: i,
-      nome: nomeUnico(nomeNacao(tipo, rand)),
+      nome: nomeUnico(nomeNacao(tipo, baralho[i], rand)),
       tipo,
       simbolo,
+      cultura: {
+        id: baralho[i].id,
+        nome: baralho[i].nome,
+        povo: baralho[i].povo,
+        regiao: baralho[i].regiao,
+        sil: baralho[i].sil,
+        nom: baralho[i].nom,
+      },
       cor: PALETA[i % PALETA.length],
       capital: capital.id,
       sistemas,
@@ -349,61 +424,6 @@ export function gerarNacoes(seed, stars) {
     })
     fronteiras.push(nacoes[nacoes.length - 1].fronteira)
   }
-
-// fronteira concreta: convex hull (Andrew) dos sistemas + respiro.
-// <3 pontos distintos → octógono ao redor do centroide.
-function fronteiraDe(pts) {
-  const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length
-  const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length
-  const cross = (o, a, b) =>
-    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
-  const ord = [...pts].sort((a, b) => a.x - b.x || a.y - b.y)
-  let casco
-  if (ord.length < 3) {
-    let r = 0.035
-    if (ord.length === 2)
-      r = Math.max(0.035, Math.hypot(ord[1].x - ord[0].x, ord[1].y - ord[0].y) / 2 + 0.02)
-    casco = Array.from({ length: 8 }, (_, i) => {
-      const a = (i / 8) * Math.PI * 2
-      return { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r }
-    })
-  } else {
-    const inf = []
-    for (const p of ord) {
-      while (inf.length >= 2 && cross(inf[inf.length - 2], inf[inf.length - 1], p) <= 0)
-        inf.pop()
-      inf.push(p)
-    }
-    const sup = []
-    for (let i = ord.length - 1; i >= 0; i--) {
-      const p = ord[i]
-      while (sup.length >= 2 && cross(sup[sup.length - 2], sup[sup.length - 1], p) <= 0)
-        sup.pop()
-      sup.push(p)
-    }
-    inf.pop()
-    sup.pop()
-    casco = [...inf, ...sup]
-    if (casco.length < 3) {
-      // colineares: octógono cobrindo a extensão
-      const span = Math.max(
-        0.02,
-        ...ord.map((p) => Math.hypot(p.x - cx, p.y - cy)),
-      )
-      casco = Array.from({ length: 8 }, (_, i) => {
-        const a = (i / 8) * Math.PI * 2
-        return { x: cx + Math.cos(a) * (span + 0.02), y: cy + Math.sin(a) * (span + 0.02) }
-      })
-    }
-  }
-  // respiro: empurra cada vértice 0.015 p/ fora do centroide
-  return casco.map((p) => {
-    const dx = p.x - cx
-    const dy = p.y - cy
-    const d = Math.hypot(dx, dy) || 1
-    return { x: +(p.x + (dx / d) * 0.015).toFixed(4), y: +(p.y + (dy / d) * 0.015).toFixed(4) }
-  })
-}
 
 // rivalidades (1-2) + aliança (0-1), espelhadas, sem par repetido
   const pares = new Set()
@@ -442,4 +462,202 @@ function fronteiraDe(pts) {
   })
 
   return { nacoes, dono: donoPorEstrela, semente: (seed ^ 0x51ab3f29) >>> 0, hash: hashStr(nacoes.map((x) => x.nome).join('|')) }
+}
+
+// ---- Perfis de evolução (expansão, agressão, diplomacia, indústria 0-10) ----
+export const PERFIS = {
+  imperio: { exp: 8, agr: 7, dip: 3, ind: 6 },
+  federacao: { exp: 5, agr: 2, dip: 9, ind: 6 },
+  republica: { exp: 5, agr: 3, dip: 7, ind: 6 },
+  juntaComercial: { exp: 4, agr: 1, dip: 8, ind: 9 },
+  juntaMilitar: { exp: 6, agr: 8, dip: 2, ind: 5 },
+  teocracia: { exp: 5, agr: 4, dip: 5, ind: 4 },
+  anarquista: { exp: 3, agr: 5, dip: 4, ind: 3 },
+  pirata: { exp: 0, agr: 9, dip: 0, ind: 2 },
+  tecnocracia: { exp: 4, agr: 3, dip: 6, ind: 9 },
+}
+
+const EVENTOS_IND = {
+  imperio: ['desfile naval na capital', 'novo estaleiro orbital', 'recrutamento em massa'],
+  federacao: ['cúpula diplomática', 'nova rota comercial', 'festival da unidade'],
+  republica: ['eleições tensas', 'reforma agrária orbital', 'novo censo estelar'],
+  juntaComercial: ['recorde de lucros', 'nova bolsa de minérios', 'fusão de guildas'],
+  juntaMilitar: ['exercício de bloqueio', 'nova doutrina de assalto', 'parada de encouraçados'],
+  teocracia: ['peregrinação em massa', 'novo templo orbital', 'profecia anunciada'],
+  anarquista: ['assembleia geral', 'mutirão de reparos', 'rádio livre no ar'],
+  pirata: ['saque ousado', 'novo esconderijo', 'motim contido'],
+  tecnocracia: ['avanço em dobra', 'nova IA de bordo', 'experimento arriscado'],
+}
+
+// estado dinâmico inicial (territórios = gerados; reputação zerada)
+export function inicialDin(base) {
+  const territorios = {}
+  base.nacoes.forEach((na) => {
+    territorios[na.id] = [...na.sistemas]
+  })
+  return { tick: 0, v: 2, rep: {}, territorios, guerras: {}, eventos: {} }
+}
+
+// aplica o estado dinâmico sobre a base estática (nomes/cores/relações intactos)
+export function aplicarDinamica(base, stars, din) {
+  const porId = new Map(stars.map((s) => [s.id, s]))
+  const nacoes = base.nacoes.map((na) => {
+    const sistemas = din?.territorios?.[na.id] ?? na.sistemas
+    const pts = sistemas.map((id) => porId.get(id)).filter(Boolean)
+    const cx = pts.reduce((a, p) => a + p.x, 0) / Math.max(1, pts.length)
+    const cy = pts.reduce((a, p) => a + p.y, 0) / Math.max(1, pts.length)
+    const raio =
+      Math.max(0.01, ...pts.map((p) => Math.hypot(p.x - cx, p.y - cy))) + 0.03
+    return {
+      ...na,
+      sistemas,
+      centro: { x: cx, y: cy },
+      raio,
+      fronteira: pts.length ? fronteiraDe(pts) : na.fronteira,
+      rep: din?.rep?.[na.id] ?? 0,
+      guerras: din?.guerras?.[na.id] ?? [],
+      eventos: din?.eventos?.[na.id] ?? [],
+    }
+  })
+  const dono = {}
+  nacoes.forEach((na, idx) => {
+    for (const id of na.sistemas) dono[id] = idx
+  })
+  const cap = {}
+  nacoes.forEach((na) => {
+    cap[na.capital] = na
+  })
+  return { ...base, nacoes, dono, cap }
+}
+
+// 1 tick de evolução: puro em (seed, tick, estado) → determinístico.
+// Capitais são invioláveis; fronteiras seguem invioláveis entre si.
+export function evoluirNacoes(seed, stars, base, din) {
+  const tick = din.tick + 1
+  const porId = new Map(stars.map((s) => [s.id, s]))
+  const territorios = {}
+  for (const na of base.nacoes)
+    territorios[na.id] = [...(din.territorios?.[na.id] ?? na.sistemas)]
+  const guerras = {}
+  for (const na of base.nacoes)
+    guerras[na.id] = [...(din.guerras?.[na.id] ?? [])]
+  const eventos = {}
+  for (const na of base.nacoes)
+    eventos[na.id] = [...(din.eventos?.[na.id] ?? [])]
+  const rep = { ...(din.rep || {}) }
+  const log = (id, texto) => {
+    eventos[id].push({ tick, texto })
+    if (eventos[id].length > 5) eventos[id].shift()
+  }
+  const donoDe = (starId) => {
+    for (const na of base.nacoes)
+      if (territorios[na.id].includes(starId)) return na.id
+    return null
+  }
+  const hulls = {}
+  const syncHull = (id) =>
+    (hulls[id] = fronteiraDe(territorios[id].map((sid) => porId.get(sid))))
+  base.nacoes.forEach((na) => syncHull(na.id))
+  const hullAlheioContem = (x, y, exceto) =>
+    base.nacoes.some(
+      (o) => o.id !== exceto && pontoEmPoligono(x, y, hulls[o.id]),
+    )
+  const cruzaCasco = (h, exceto) =>
+    base.nacoes.some((o) => o.id !== exceto && fronteirasCruzam(h, hulls[o.id]))
+  const envolveEstrangeira = (h, exceto) => {
+    for (const o of base.nacoes) {
+      if (o.id === exceto) continue
+      for (const sid of territorios[o.id]) {
+        const e = porId.get(sid)
+        if (pontoEmPoligono(e.x, e.y, h)) return true
+      }
+    }
+    return false
+  }
+
+  // reputação decai 1 a cada 5 ticks em direção a 0 (esquecimento)
+  if (tick % 5 === 0) {
+    for (const k of Object.keys(rep)) {
+      if (rep[k] > 0) rep[k]--
+      else if (rep[k] < 0) rep[k]++
+      if (rep[k] === 0) delete rep[k]
+    }
+  }
+
+  for (const na of base.nacoes) {
+    const P = PERFIS[na.tipo]
+    const r = mulberry32(hashStr(`${seed}:${tick}:${na.id}`))
+    const meus = territorios[na.id]
+
+    // expansão: coloniza 1 estrela livre vizinha
+    if (P.exp > 0 && meus.length < 80 && r() < (P.exp / 10) * 0.35) {
+      const cap = porId.get(na.capital)
+      const cand = stars
+        .filter((s) => donoDe(s.id) == null)
+        .map((s) => ({ s, d: (s.x - cap.x) ** 2 + (s.y - cap.y) ** 2 }))
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 200)
+      for (const { s } of cand) {
+        if (hullAlheioContem(s.x, s.y, na.id)) continue
+        const h = fronteiraDe([...meus.map((id) => porId.get(id)), s])
+        if (cruzaCasco(h, na.id) || envolveEstrangeira(h, na.id)) continue
+        meus.push(s.id)
+        syncHull(na.id)
+        log(na.id, `colonizou S${s.id}`)
+        break
+      }
+    }
+
+    // guerra: rouba 1 sistema não-capital do rival mais fraco em guerra/não
+    if (P.agr > 0 && r() < (P.agr / 10) * 0.22) {
+      const alvos = base.nacoes
+        .filter((o) => o.id !== na.id && territorios[o.id].length > 1)
+        .sort((a, b) => territorios[a.id].length - territorios[b.id].length)
+      const alvo = alvos[0]
+      if (alvo) {
+        const capA = porId.get(na.capital)
+        const vit = territorios[alvo.id]
+          .filter((id) => id !== alvo.capital)
+          .map((id) => porId.get(id))
+          .sort(
+            (a, b) =>
+              (a.x - capA.x) ** 2 + (a.y - capA.y) ** 2 - ((b.x - capA.x) ** 2 + (b.y - capA.y) ** 2),
+          )[0]
+        if (vit) {
+          const h = fronteiraDe([...meus.map((id) => porId.get(id)), vit])
+          if (!cruzaCasco(h, na.id) && !envolveEstrangeira(h, na.id)) {
+            territorios[alvo.id] = territorios[alvo.id].filter(
+              (id) => id !== vit.id,
+            )
+            meus.push(vit.id)
+            syncHull(na.id)
+            syncHull(alvo.id)
+            if (!guerras[na.id].includes(alvo.id)) guerras[na.id].push(alvo.id)
+            if (!guerras[alvo.id].includes(na.id)) guerras[alvo.id].push(na.id)
+            log(na.id, `tomou S${vit.id} de ${alvo.nome}`)
+            log(alvo.id, `perdeu S${vit.id} para ${na.nome}`)
+          }
+        }
+      }
+    }
+
+    // diplomacia: encerra 1 guerra
+    if (guerras[na.id].length && r() < (P.dip / 10) * 0.4) {
+      const g = guerras[na.id][0]
+      guerras[na.id] = guerras[na.id].filter((x) => x !== g)
+      guerras[g] = (guerras[g] || []).filter((x) => x !== na.id)
+      const outro = base.nacoes.find((o) => o.id === g)
+      log(na.id, `paz com ${outro ? outro.nome : '?'}`)
+      if (outro) log(g, `paz com ${na.nome}`)
+    }
+
+    // indústria: evento interno de sabor
+    if (r() < (P.ind / 10) * 0.3) {
+      const tab = EVENTOS_IND[na.tipo] || EVENTOS_IND.republica
+      log(na.id, tab[Math.floor(r() * tab.length)])
+    }
+  }
+
+  // preserva o resto do din (eco, v): só estes campos evoluem aqui
+  return { ...din, tick, rep, territorios, guerras, eventos }
 }

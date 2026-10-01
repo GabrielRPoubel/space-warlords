@@ -5,24 +5,14 @@ import {
   DESCR_ESTRELA,
   avaliarHabitabilidade,
   gerarRecursos,
-} from './system.js'
+} from '../game/sim/system.js'
+import { desenhar } from '../game/render/systemCanvas.js'
+import { nomeEdificio } from '../game/sim/economia.js'
+import { fmtPop } from './NomesItens.js'
 
 // Mapa do sistema: estrela ao centro, órbitas em escala logarítmica,
 // planetas clicáveis com ficha. Navegação igual à galáxia:
 // WASD/setas com inércia, +/- e scroll = zoom suave.
-function raioTela(au, escala) {
-  return (46 + 95 * Math.log10(1 + au * 6)) * escala
-}
-
-const TAM_PX = {
-  lava: 5,
-  desertico: 5,
-  rochoso: 5,
-  oceanico: 6,
-  gelado: 7,
-  gasoso: 12,
-}
-
 const ACCEL = 1400 // px/s²
 const MAXV = 620 // px/s
 const ATRITO = 3.2
@@ -30,157 +20,26 @@ const ZOOM_SUAV = 7
 const ESC_MIN = 0.4
 const ESC_MAX = 3
 
-function desenhar(canvas, sistema, estrela, selNome, vista) {
-  const ctx = canvas.getContext('2d')
-  const w = canvas.width
-  const h = canvas.height
-  const cx = w / 2 + vista.ox
-  const cy = h / 2 + vista.oy
-  const esc = vista.escala
-  ctx.fillStyle = '#0a0a0a'
-  ctx.fillRect(0, 0, w, h)
-
-  for (let i = 0; i < 120; i++) {
-    const k = (i + 0.5) / 120
-    const sx = ((k * 12.9) % 1) * w
-    const sy = ((k * 7.7) % 1) * h
-    ctx.fillStyle = `rgba(255,255,255,${0.05 + (k % 0.12)})`
-    ctx.fillRect(sx, sy, 1, 1)
-  }
-
-  for (const c of sistema.cinturoes) {
-    const r = raioTela(c.au, esc)
-    const n = c.denso ? 320 : 200
-    for (let i = 0; i < n; i++) {
-      const a = ((i * 2.39996) % (Math.PI * 2) + c.au) % (Math.PI * 2)
-      const jitter = (((i * 37) % 10) - 5) * esc
-      ctx.fillStyle = c.denso
-        ? 'rgba(255,150,100,0.4)'
-        : 'rgba(200,200,200,0.3)'
-      ctx.fillRect(
-        cx + Math.cos(a) * (r + jitter),
-        cy + Math.sin(a) * (r + jitter),
-        2,
-        2,
-      )
-    }
-  }
-
-  const todos = [
-    ...sistema.planetas.map((p) => ({ ...p, ana: false })),
-    ...sistema.anas.map((a) => ({
-      nome: a.nome,
-      tipo: 'ana',
-      au: a.au,
-      cor: '#8b8b98',
-      angulo: (a.au * 1.7) % (Math.PI * 2),
-      luas: [],
-    })),
-  ]
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-  ctx.lineWidth = 1
-  for (const p of todos) {
-    ctx.beginPath()
-    ctx.arc(cx, cy, raioTela(p.au, esc), 0, Math.PI * 2)
-    ctx.stroke()
-  }
-
-  for (const p of todos) {
-    const r = raioTela(p.au, esc)
-    const px = cx + Math.cos(p.angulo) * r
-    const py = cy + Math.sin(p.angulo) * r
-    const t = (p.ana ? 3 : TAM_PX[p.tipo] || 5) * Math.min(1.6, esc)
-    ctx.fillStyle = p.cor
-    ctx.fillRect(px - t / 2, py - t / 2, t, t)
-    if (!p.ana && esc > 0.6) {
-      ctx.fillStyle = 'rgba(255,255,255,0.55)'
-      ctx.font = '11px monospace'
-      ctx.fillText(p.nome.split(' ')[1], px + 8, py - 6)
-    }
-    if (p.luas?.length && TAM_PX[p.tipo] >= 12) {
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'
-      p.luas.forEach((_, m) => {
-        const la = p.angulo + (m + 1) * 1.1
-        ctx.fillRect(
-          px + Math.cos(la) * (t / 2 + 7) - 1,
-          py + Math.sin(la) * (t / 2 + 7) - 1,
-          2,
-          2,
-        )
-      })
-    }
-    if (p.nome === selNome) {
-      ctx.strokeStyle = '#fff'
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(px - t / 2 - 5, py - t / 2 - 5, t + 10, t + 10)
-    }
-  }
-
-  const rs =
-    Math.min(42, Math.max(12, 8 + 10 * Math.sqrt(estrela.raioSol))) * esc
-  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rs * 3)
-  g.addColorStop(0, estrela.cor)
-  g.addColorStop(1, 'transparent')
-  ctx.fillStyle = g
-  ctx.fillRect(cx - rs * 3, cy - rs * 3, rs * 6, rs * 6)
-  ctx.fillStyle = estrela.cor
-  ctx.fillRect(cx - rs / 2, cy - rs / 2, rs, rs)
-  ctx.fillStyle = 'rgba(255,255,255,0.7)'
-  ctx.font = '12px monospace'
-  ctx.fillText(sistema.nome, cx + rs / 2 + 8, cy + 4)
-
-  // vinheta sutil nas bordas
-  const vg = ctx.createRadialGradient(
-    w / 2, h / 2, Math.min(w, h) * 0.35,
-    w / 2, h / 2, Math.max(w, h) * 0.72,
-  )
-  vg.addColorStop(0, 'rgba(0,0,0,0)')
-  vg.addColorStop(1, 'rgba(0,0,0,0.45)')
-  ctx.fillStyle = vg
-  ctx.fillRect(0, 0, w, h)
-
-  // estrela clicável: entra na lista de corpos com seu raio de clique
-  const corpoEstrela = {
-    nome: sistema.nome,
-    tipo: 'estrela',
-    au: 0,
-    cor: estrela.cor,
-    angulo: 0,
-    luas: [],
-    sx: cx,
-    sy: cy,
-    sraio: rs / 2 + 8,
-  }
-  if (corpoEstrela.nome === selNome) {
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 1.5
-    ctx.strokeRect(
-      cx - rs / 2 - 5,
-      cy - rs / 2 - 5,
-      rs + 10,
-      rs + 10,
-    )
-  }
-
-  return [
-    ...todos.map((p) => {
-      const r = raioTela(p.au, esc)
-      return {
-        ...p,
-        sx: cx + Math.cos(p.angulo) * r,
-        sy: cy + Math.sin(p.angulo) * r,
-      }
-    }),
-    corpoEstrela,
-  ]
-}
-
-export default function SystemMap({ sistema, estrela, onVoltar }) {
+export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono }) {
   const canvasRef = useRef(null)
   const [sel, setSel] = useState(null)
   const [zoomUi, setZoomUi] = useState(1)
-  const [velUi, setVelUi] = useState(0)
+  const colRef = useRef(null)
+
+  // planetas colonizados → anel na cor da nação + pontos (via ref)
+  colRef.current =
+    ecoSistema && dono
+      ? Object.fromEntries(
+          ecoSistema.planetas.map((p) => [
+            p.nome,
+            {
+              cor: dono.cor,
+              civ: p.edificios.filter((e) => e.tipo !== 'militar').length,
+              mil: p.edificios.filter((e) => e.tipo === 'militar').length,
+            },
+          ]),
+        )
+      : null
 
   const vistaRef = useRef({ ox: 0, oy: 0, escala: 1 })
   const escAlvo = useRef(1)
@@ -259,7 +118,6 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
 
       if (frame % 6 === 0) {
         setZoomUi(esc)
-        setVelUi(sp)
       }
       if (canvasRef.current) {
         corposRef.current = desenhar(
@@ -268,6 +126,7 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
           estrela,
           selRef.current?.nome,
           nv,
+          colRef.current,
         )
       }
       } catch (err) {
@@ -354,6 +213,10 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
       ? avaliarHabitabilidade(ficha.detalhe, estrela)
       : null
   const ehEstrela = ficha?.tipo === 'estrela'
+  const ecoPlaneta =
+    !ehEstrela && ecoSistema && ficha?.nome
+      ? ecoSistema.planetas.find((p) => p.nome === ficha.nome)
+      : null
   const hzIn = +(0.95 * Math.sqrt(sistema.L)).toFixed(2)
   const hzOut = +(1.4 * Math.sqrt(sistema.L)).toFixed(2)
   const noHZ = ehEstrela
@@ -386,8 +249,7 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
         <strong>SISTEMA {sistema.nome}</strong>
         <span>
           {estrela.tipo} · {estrela.raioSol} R☉ · {estrela.tempK}K ·{' '}
-          {sistema.planetas.length} planetas · zoom {zoomUi.toFixed(1)}x · v=
-          {Math.round(velUi)}
+          {sistema.planetas.length} planetas · zoom {zoomUi.toFixed(1)}x
         </span>
         <span className="sw-hint">WASD move · +/- ou scroll = zoom</span>
         <button onClick={onVoltar}>Voltar (Esc)</button>
@@ -436,6 +298,13 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
                   {ficha.detalhe.luas.map((l) => l.nome.split(' ').pop()).join(', ')}
                 </span>
               )}
+              {ecoPlaneta && (
+                <span>
+                  {ecoPlaneta.pop < ecoPlaneta.pop0 * 0.9 ? '◌ COLÔNIA' : '● COLONIZADO'} — pop{' '}
+                  {fmtPop(ecoPlaneta.pop)}
+                  {dono?.nome ? ` · ${dono.nome}` : ''}
+                </span>
+              )}
             </div>
           </div>
           <div className="sw-abas">
@@ -451,6 +320,14 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
             >
               Recursos
             </button>
+            {ecoPlaneta && (
+              <button
+                className={aba === 'construcoes' ? 'sw-aba ativa' : 'sw-aba'}
+                onClick={() => setAba('construcoes')}
+              >
+                Construções
+              </button>
+            )}
           </div>
           {aba === 'geral' && !ehEstrela && (
             <>
@@ -522,13 +399,50 @@ export default function SystemMap({ sistema, estrela, onVoltar }) {
               ))}
             </ul>
           )}
+          {aba === 'construcoes' && ecoPlaneta && (
+            <>
+              {ecoPlaneta.obra && (
+                <p className="sw-hint">
+                  ◌ {nomeEdificio(ecoPlaneta.obra.ed)} em construção ·
+                  pronta em {ecoPlaneta.obra.ticks}d
+                </p>
+              )}
+              <p className="sw-hint">Militares</p>
+              {ecoPlaneta.edificios.filter((e) => e.tipo === 'militar').length ? (
+                <ul className="sw-motivos">
+                  {ecoPlaneta.edificios
+                    .filter((e) => e.tipo === 'militar')
+                    .map((e, i) => (
+                      <li key={i} className="warn">
+                        ◆ {e.nome} · operacional
+                      </li>
+                    ))}
+                </ul>
+              ) : (
+                <p className="sw-hint">Nenhuma defesa instalada.</p>
+              )}
+              <p className="sw-hint">Civis</p>
+              {ecoPlaneta.edificios.filter((e) => e.tipo !== 'militar').length ? (
+                <ul className="sw-motivos">
+                  {ecoPlaneta.edificios
+                    .filter((e) => e.tipo !== 'militar')
+                    .map((e, i) => (
+                      <li key={i} className="ok">
+                        {nomeEdificio(e)} · {Math.round(e.util * 100)}%
+                      </li>
+                    ))}
+                </ul>
+              ) : (
+                <p className="sw-hint">Sem construções civis.</p>
+              )}
+            </>
+          )}
           <button onClick={() => setSel(null)}>Fechar</button>
         </div>
       )}
       {!ficha && (
         <span className="sw-hint sw-bottom-hint">
-          clique no planeta p/ ficha · seed {sistema.seed} · neve ≈{' '}
-          {sistema.snow} AU
+          clique no planeta p/ ficha · neve ≈ {sistema.snow} AU
         </span>
       )}
     </div>

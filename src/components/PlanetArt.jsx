@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { mulberry32 } from './galaxy.js'
-import { hashStr } from './system.js'
+import { mulberry32 } from '../game/sim/galaxy.js'
+import { hashStr } from '../game/sim/system.js'
 
 // Pixelart determinística do planeta (64×64, ampliada via CSS).
 // Mesma seed + mesmo nome = mesma arte sempre.

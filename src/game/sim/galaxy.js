@@ -186,15 +186,18 @@ export function gerarAnomalias(seed, shape) {
 
   const nPSR = 6 + Math.floor(rand() * 7)
   for (let i = 0; i < nPSR; i++) {
+    const id = `PSR${i}`
     const periodo = +(1.4 + rand() * rand() * 800).toFixed(1)
     colocar({
-      id: `PSR${i}`,
+      id,
       kind: 'pulsar',
       nome: `PSR-${i}`,
       ...pos(),
       cor: '#67e8f9',
       tamanho: 3.5,
       periodo,
+      // fase do farol pré-calculada (evita reduce por frame no render)
+      fase: [...id].reduce((t, c) => t + c.charCodeAt(0), 0),
       desc: `Pulsar · estrela de nêutrons em rotação · farol de rádio a cada ${periodo}ms.`,
     })
   }

@@ -36,6 +36,30 @@
   letter-spacing: 1px;
   background: linear-gradient(rgba(0, 0, 0, 0.7), transparent);
   pointer-events: none;
+  text-transform: uppercase;
+}
+
+.sw-hud-top strong {
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.5);
+  background: rgba(10, 10, 12, 0.65);
+  padding: 4px 10px;
+  font-weight: normal;
+}
+
+.sw-navbox {
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  border-left: 3px solid #fb923c;
+  background: rgba(10, 10, 12, 0.65);
+  padding: 4px 12px;
+  letter-spacing: 2px;
+  color: #ffd9ae;
+}
+
+.sw-hud-top .sw-hint {
+  border: 1px solid #2a2a33;
+  background: rgba(10, 10, 12, 0.65);
+  padding: 4px 10px;
 }
 
 .sw-hud-top button {
@@ -178,6 +202,7 @@
   flex-shrink: 0;
 }
 
+
 .hab-ok {
   color: #4ade80;
   font-weight: bold;
@@ -286,6 +311,20 @@
   margin: 0;
 }
 
+.sw-logo {
+  font-size: 64px;
+  letter-spacing: 12px;
+  color: #f5f5f5;
+  text-shadow:
+    0 0 18px rgba(251, 146, 60, 0.65),
+    0 0 60px rgba(251, 146, 60, 0.3);
+}
+
+.sw-play {
+  font-size: 20px;
+  padding: 12px 34px !important;
+}
+
 .sw-buttons {
   display: flex;
   gap: 8px;
@@ -303,4 +342,374 @@
 
 .sw-primary {
   border-color: #fb923c !important;
+}
+
+.sw-criacao {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.sw-card {
+  background: #101014;
+  border: 1px solid #2a2a33;
+  padding: 16px;
+}
+
+.sw-previa {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  text-align: center;
+  position: sticky;
+  top: 16px;
+}
+
+.sw-previa strong {
+  font-size: 20px;
+  letter-spacing: 1px;
+  max-width: 220px;
+  overflow-wrap: break-word;
+}
+
+.sw-criacao-grade {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+}
+
+.sw-criacao-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  background: #101014;
+  border: 1px solid #2a2a33;
+  padding: 16px;
+}
+
+.sw-criacao-form h3 {
+  margin: 6px 0 2px;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: #fb923c;
+  border-bottom: 1px solid #2a2a33;
+  padding-bottom: 4px;
+}
+
+.sw-criacao-form h3:first-child {
+  margin-top: 0;
+}
+
+.sw-sexo-titulo {
+  font-size: 14px;
+}
+
+.sw-sexo {
+  display: flex;
+  gap: 12px;
+}
+
+.sw-sexo-opcao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: #101014;
+  border: 2px solid #2a2a33;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.sw-sexo-opcao img {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.sw-sexo-opcao.ativa {
+  border-color: #fb923c;
+}
+
+.sw-retrato {
+  display: block;
+  image-rendering: pixelated;
+  border: 1px solid #2a2a33;
+  background: #0a0a0c;
+}
+
+.sw-criacao-grade {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.sw-criacao-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.sw-criacao-form label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sw-setup input,
+.sw-setup select {
+  background: #16161d;
+  color: #e5e7eb;
+  border: 1px solid #33333f;
+  padding: 6px 10px;
+  font-family: monospace;
+}
+
+.sw-setup input[type='number'] {
+  width: 70px;
+}
+
+.sw-amostras {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.sw-amostra {
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  border: 1px solid #33333f !important;
+  cursor: pointer;
+}
+
+.sw-amostra.ativa {
+  border-color: #fb923c !important;
+  outline: 1px solid #fb923c;
+}
+
+.sw-banco {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sw-setup button.sw-nome {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  font-family: monospace;
+  font-size: 13px;
+  color: #b0b0b8;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sw-setup button.sw-nome:hover {
+  color: #e5e7eb;
+}
+
+.sw-setup button.sw-nome.ativo {
+  color: #fb923c;
+}
+
+.sw-setup button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sw-faccoes {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.sw-faccao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: #101014;
+  border: 1px solid #2a2a33;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: monospace;
+  color: #e5e7eb;
+}
+
+.sw-faccao:hover {
+  border-color: #fb923c;
+}
+
+.sw-simbolo {
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.sw-faccao-nome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.sw-pill {
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.sw-pill-voce {
+  color: #fff;
+  border-color: #fff;
+}
+
+.sw-pill-guerra {
+  color: #ff4d5e;
+  border-color: #ff4d5e;
+}
+
+.sw-pill-aliado {
+  color: #2fe08a;
+  border-color: #2fe08a;
+}
+
+.sw-pill-rival {
+  color: #fb923c;
+  border-color: #fb923c;
+}
+
+.sw-pill-neutro {
+  color: #9fb3c8;
+  border-color: #9fb3c8;
+}
+
+/* menu lateral do jogador */
+.sw-lateral {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sw-lat {
+  background: rgba(10, 10, 12, 0.8);
+  color: #e5e7eb;
+  border: 1px solid #33333f;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sw-lat svg {
+  display: block;
+}
+
+.sw-px-icone {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.sw-lat:hover {
+  border-color: #fb923c;
+}
+
+.sw-lat.ativa {
+  border-color: #fb923c;
+  color: #fb923c;
+}
+
+.sw-painel-jogador {
+  position: absolute;
+  left: 150px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 300px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #101014;
+  border: 1px solid #fb923c;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sw-painel-jogador h2 {
+  margin: 0;
+  letter-spacing: 2px;
+  font-size: 16px;
+}
+
+.sw-painel-jogador p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.sw-painel-jogador button {
+  background: #16161d;
+  color: #e5e7eb;
+  border: 1px solid #33333f;
+  padding: 6px 10px;
+  font-family: monospace;
+  cursor: pointer;
+}
+
+.sw-eco {
+  text-align: left;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.sw-dobravel {
+  border: 1px solid #2a2a33;
+  padding: 6px 10px;
+}
+
+.sw-dobravel summary {
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.sw-eco-tab {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.sw-eco-tab td {
+  border-bottom: 1px solid #22222b;
+  padding: 2px 4px;
+}
+
+.sw-eco-tab td:last-child {
+  text-align: right;
+  white-space: nowrap;
 }
