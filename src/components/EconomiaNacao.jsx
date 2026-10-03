@@ -92,7 +92,21 @@ export default function EconomiaNacao({ na, eco, dev }) {
       }
     }
     precos.sort((a, b) => b.med - a.med)
-    return { meus, pop, subutil, faltas, cons, vend, balanca, precos, caro, barato, tesouro, estoques }
+    const interno = eco.interno?.[na.id] || null
+    const hub = eco.hub?.[na.id] ?? null
+    const admin = eco.admin?.[na.id] || null
+    const adminFalta = eco.adminFalta?.[na.id] || 0
+    const riqueza = {}
+    for (const [, s] of meus)
+      for (const p of s.planetas)
+        if (p.riqueza) riqueza[p.riqueza] = (riqueza[p.riqueza] || 0) + 1
+    let estacoes = 0
+    for (const [, s] of meus)
+      for (const es of s.estacoes || []) estacoes += es.n || 0
+    return {
+      meus, pop, subutil, faltas, cons, vend, balanca, precos, caro, barato,
+      tesouro, estoques, interno, hub, admin, adminFalta, riqueza, estacoes,
+    }
   }, [na, eco, dev])
 
   if (!d) return <p className="sw-hint">Economia inicia no próximo tick.</p>
@@ -114,6 +128,27 @@ export default function EconomiaNacao({ na, eco, dev }) {
           </>
         )}
       </p>
+      <p>
+        Administração{' '}
+        <strong>
+          {Math.round(d.admin?.custo ?? 0).toLocaleString('pt-BR')} cr/tick
+        </strong>{' '}
+        · {d.admin?.n ?? d.meus.length} sistema(s) · {d.estacoes} estação(ões) de mineração
+        {d.adminFalta > 0 && (
+          <strong className="hab-no">
+            {' '}· déficit de {Math.round(d.adminFalta)} cr
+          </strong>
+        )}
+      </p>
+      {Object.keys(d.riqueza).length > 0 && (
+        <p className="sw-hint">
+          Riqueza:{' '}
+          {['abundante', 'rico', 'estavel', 'pobre', 'miseravel']
+            .filter((n) => d.riqueza[n])
+            .map((n) => `${d.riqueza[n]} ${n}`)
+            .join(' · ')}
+        </p>
+      )}
       {dev && d.estoques.length > 0 && (
         <details className="sw-dobravel" open>
           <summary>Estoques (DEV)</summary>
@@ -129,13 +164,34 @@ export default function EconomiaNacao({ na, eco, dev }) {
         )}
       </details>
       <details className="sw-dobravel">
-        <summary>Vendas por item ({d.vend.length})</summary>
+        <summary>Vendas externas por item ({d.vend.length})</summary>
         {d.vend.length ? (
           <Tabela linhas={d.vend} />
         ) : (
           <p className="sw-hint">Sem vendas registradas.</p>
         )}
       </details>
+      <p className="sw-hint">
+        Gateways (frete menor vence):{' '}
+        {d.hub != null ? (
+          <>
+            hub <strong>S{d.hub}</strong>
+          </>
+        ) : (
+          'sem hub'
+        )}{' '}
+        · capital <strong>S{na.capital}</strong>
+        {!d.meus.length && ' (sem sistemas povoados)'} · mercado interno:{' '}
+        {d.interno ? (
+          <>
+            <strong>{fmtQ(d.interno.mov)}</strong> transferido · frete{' '}
+            <strong>{fmtQ(d.interno.frete)} cr</strong>
+          </>
+        ) : (
+          'sem transferências no tick'
+        )}{' '}
+        · externo = nação como entidade única (só créditos)
+      </p>
       <details className="sw-dobravel">
         <summary>Preços mín–méd–máx</summary>
         {d.caro && (
@@ -177,7 +233,7 @@ export default function EconomiaNacao({ na, eco, dev }) {
             ))}
             {d.subutil > 0 && (
               <li className="warn">
-                {d.subutil} edifício(s) subutilizado(s) — rota sem lucro
+                {d.subutil} edifício(s) subutilizado(s) — sem escoamento (interno + externo)
               </li>
             )}
           </ul>

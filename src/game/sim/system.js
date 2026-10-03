@@ -75,6 +75,7 @@ export const COR_ELEMENTO = {
   Ni: '#8a9ba8', Al: '#d7d7d7', Ca: '#e8e0c8', S: '#e8d44d',
   H: '#f2f2f2', He: '#c9b8ff', CH4: '#7de0c9', NH3: '#8ad4f0',
   H2O: '#4aa3ff', NaCl: '#ffffff', K: '#c9a0e8', C: '#6b6b6b',
+  PGM: '#e5e4e2', Au: '#ffd447', LUX: '#c9a0dc',
 }
 
 export function gerarRecursos(planeta, seedSistema) {
@@ -118,6 +119,32 @@ export const COR_PLANETA = {
   oceanico: '#4aa3ff',
   gasoso: '#d8b98a',
   gelado: '#bfe3ff',
+}
+
+// Composição real dos cinturões de asteroides (pesquisa: Wikipedia —
+// Asteroid spectral types / Asteroid mining / 16 Psyche):
+// C (carbonáceo, mais comum): água/hidratos, carbono orgânico, amônia;
+// S (silicáceo): silicatos + Fe/Ni e traços de Au/PGM (~50 kg de metais
+// raros por 650 t de metal num corpo de 10 m);
+// M (metálico, raro, ~8%): ferro-níquel com até 10× mais metal e
+// platinoides (Pt, Pd, Ir, Os, Rh, Ru) + ouro — 16 Psyche.
+// Mix = produção por estação/tick (escala do jogo).
+export const MIX_CINTURAO = {
+  S: { Fe: 1.2, Si: 1.0, Mg: 0.4, Ni: 0.1, PGM: 0.005, Au: 0.006 },
+  M: { Fe: 2.0, Ni: 0.5, PGM: 0.06, Au: 0.06 },
+  C: { C: 1.2, H2O: 0.5, NH3: 0.1 },
+}
+
+// cinturão interno tende a S (rochoso), externo a C (carbonáceo);
+// M é raro em qualquer raio. Extensão → nº de estações (slots).
+function comporCinturao(rand, au, snow, denso) {
+  const r = rand()
+  let tipo
+  if (r < 0.08) tipo = 'M'
+  else if (au < snow * 1.2) tipo = r < 0.62 ? 'S' : 'C'
+  else tipo = r < 0.32 ? 'S' : 'C'
+  const slots = 1 + Math.floor(rand() * 3) + (denso ? 2 : 0)
+  return { tipo, slots }
 }
 
 const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI']
@@ -208,6 +235,9 @@ export function gerarSistema(seedGalaxia, estrela) {
     au *= 1.45 + rand() * 0.7
   }
 
+  // RNG próprio p/ a composição (não altera o stream existente — a
+  // galáxia salva continua idêntica bit a bit)
+  const randC = mulberry32(hashSeed(sysSeed, 4242))
   const cinturoes = []
   if (cfg.detritos) {
     if (rand() < cfg.detritos)
@@ -215,12 +245,14 @@ export function gerarSistema(seedGalaxia, estrela) {
         nome: 'campo de detritos',
         au: +(snow * 1.2).toFixed(2),
         denso: true,
+        ...comporCinturao(randC, snow * 1.2, snow, true),
       })
   } else if (rand() < cfg.cinturao) {
     cinturoes.push({
       nome: 'cinturão principal',
       au: +snow.toFixed(2),
       denso: false,
+      ...comporCinturao(randC, snow, snow, false),
     })
   }
 

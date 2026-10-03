@@ -7,8 +7,19 @@ import {
   gerarRecursos,
 } from '../game/sim/system.js'
 import { desenhar } from '../game/render/systemCanvas.js'
-import { nomeEdificio } from '../game/sim/economia.js'
-import { fmtPop } from './NomesItens.js'
+import {
+  Q_MIN_CIVIL,
+  capacidadeExploracao,
+  nomeEdificio,
+  qualidadeVida,
+} from '../game/sim/economia.js'
+import {
+  CLASSE_RIQUEZA,
+  NOME_COLONIA,
+  NOME_RIQUEZA,
+  SIMBOLO_COLONIA,
+  fmtPop,
+} from './NomesItens.js'
 
 // Mapa do sistema: estrela ao centro, órbitas em escala logarítmica,
 // planetas clicáveis com ficha. Navegação igual à galáxia:
@@ -217,6 +228,11 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
     !ehEstrela && ecoSistema && ficha?.nome
       ? ecoSistema.planetas.find((p) => p.nome === ficha.nome)
       : null
+  // mundo civil: q a 1% do ideal, ainda não colonizado
+  const qVista =
+    ficha?.detalhe && !ficha.ana && !ecoPlaneta
+      ? qualidadeVida(ficha.detalhe)
+      : null
   const hzIn = +(0.95 * Math.sqrt(sistema.L)).toFixed(2)
   const hzOut = +(1.4 * Math.sqrt(sistema.L)).toFixed(2)
   const noHZ = ehEstrela
@@ -299,11 +315,27 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
                 </span>
               )}
               {ecoPlaneta && (
-                <span>
-                  {ecoPlaneta.pop < ecoPlaneta.pop0 * 0.9 ? '◌ COLÔNIA' : '● COLONIZADO'} — pop{' '}
-                  {fmtPop(ecoPlaneta.pop)}
-                  {dono?.nome ? ` · ${dono.nome}` : ''}
-                </span>
+                <>
+                  <span>
+                    {ecoPlaneta.pop < ecoPlaneta.pop0 * 0.9 ? '◌' : '●'}{' '}
+                    {SIMBOLO_COLONIA[ecoPlaneta.col] || ''}{' '}
+                    {NOME_COLONIA[ecoPlaneta.col] || 'COLÔNIA'} — pop{' '}
+                    {fmtPop(ecoPlaneta.pop)}
+                    {ecoPlaneta.col === 'exploracao'
+                      ? ` (cap ${fmtPop(capacidadeExploracao(ecoPlaneta))})`
+                      : ''}
+                    {dono?.nome ? ` · ${dono.nome}` : ''}
+                  </span>
+                  {ecoPlaneta.riqueza && (
+                    <span className={CLASSE_RIQUEZA[ecoPlaneta.riqueza] || ''}>
+                      {NOME_RIQUEZA[ecoPlaneta.riqueza] || ecoPlaneta.riqueza}
+                      {ecoPlaneta.riqueza === 'miseravel' ||
+                      ecoPlaneta.riqueza === 'pobre'
+                        ? ' · demandas básicas não atendidas'
+                        : ''}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -333,6 +365,11 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
             <>
               {ficha.ana && (
                 <span className="hab-no">○ INÓSPITO p/ humanos</span>
+              )}
+              {qVista != null && qVista >= Q_MIN_CIVIL && (
+                <span className="hab-ok">
+                  ◎ MUNDO CIVIL — elegível p/ colônia civil
+                </span>
               )}
               {aval && (
                 <>
@@ -376,6 +413,27 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
                 </li>
               </ul>
               <p className="sw-hint">{DESCR_ESTRELA[estrela.tipo]}</p>
+              {sistema.cinturoes?.length > 0 && (
+                <ul className="sw-motivos">
+                  {sistema.cinturoes.map((c, i) => {
+                    const es = ecoSistema?.estacoes?.find((e) => e.b === i)
+                    const nomeTipo =
+                      c.tipo === 'M'
+                        ? 'metálico (Fe-Ni, platinoides, ouro)'
+                        : c.tipo === 'S'
+                          ? 'silicáceo (metais + traços de Au/PGM)'
+                          : 'carbonáceo (água, carbono, amônia)'
+                    return (
+                      <li key={i} className="ok">
+                        ◌ {c.nome} · {nomeTipo} ·{' '}
+                        {es
+                          ? `${es.n}/${es.slots} estação(ões) de mineração`
+                          : `${c.slots} estação(ões) possíveis`}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </>
           )}
           {aba === 'recursos' && recs && (
@@ -401,6 +459,17 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
           )}
           {aba === 'construcoes' && ecoPlaneta && (
             <>
+              {ecoPlaneta.col === 'exploracao' && (
+                <p className="sw-hint">
+                  ⛏ posto de exploração · pop {fmtPop(ecoPlaneta.pop)} / cap{' '}
+                  {fmtPop(capacidadeExploracao(ecoPlaneta))}
+                </p>
+              )}
+              {ecoPlaneta.col === 'civil' && (
+                <p className="sw-hint">
+                  ● mundo civil · crescimento livre com básicos atendidos
+                </p>
+              )}
               {ecoPlaneta.obra && (
                 <p className="sw-hint">
                   ◌ {nomeEdificio(ecoPlaneta.obra.ed)} em construção ·

@@ -995,7 +995,13 @@ export default function GalaxyMap() {
         <div className="sw-modal">
           <div className="sw-panel" onClick={(e) => e.stopPropagation()}>
             <h2>DEV · ECONOMIA GALÁCTICA</h2>
-            <DevPanel tick={din.tick} dip={dip} eco={din.eco} onAvancar={avancarDias} />
+            <DevPanel
+              tick={din.tick}
+              data={dataDoTick(din.tick)}
+              dip={dip}
+              eco={din.eco}
+              onAvancar={avancarDias}
+            />
             <div className="sw-buttons">
               <button onClick={() => setVerDev(false)}>Fechar (Esc)</button>
             </div>
