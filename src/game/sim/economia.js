@@ -34,7 +34,7 @@ const BIO_CARBONO = 0.001
 // mineração na rede elétrica (já paga upkeep): só 0.1 de COMB de apoio
 const FUEL_EXT = 0.1
 const FUEL_SINT = 0.5
-const FUEL_DIST = 2.0
+export const FUEL_DIST = 2.0
 // mercado externo: a nação compra a gal×(1+spread) e vende a gal×(1-spread)
 // (tarifa dos hubs; sem armazém nacional: produtos ficam nos sistemas)
 const SPREAD_EXT = 0.1

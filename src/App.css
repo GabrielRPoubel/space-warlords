@@ -713,3 +713,284 @@
   text-align: right;
   white-space: nowrap;
 }
+
+/* mercado galáctico (aba Comércio) */
+.sw-painel-largo {
+  width: min(820px, calc(100vw - 180px));
+}
+
+.sw-mk {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.sw-mk-resumo {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sw-mk-stat {
+  flex: 1;
+  min-width: 96px;
+  border: 1px solid #2a2a33;
+  background: linear-gradient(180deg, #17171f, #121218);
+  padding: 6px 9px;
+}
+
+.sw-mk-stat b {
+  display: block;
+  font-size: 15px;
+  color: #ffd7ad;
+}
+
+.sw-mk-stat span {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #9fb3c8;
+  text-transform: uppercase;
+}
+
+.sw-mk-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 2px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #fb923c;
+  text-transform: uppercase;
+}
+
+.sw-mk-h::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(251, 146, 60, 0.4), transparent);
+}
+
+.sw-mk-ops {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px;
+}
+
+.sw-mk-op {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #2a2a33;
+  background: #14141a;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-family: monospace;
+  color: #e5e7eb;
+  text-align: left;
+}
+
+.sw-mk-op:hover {
+  border-color: #fb923c;
+}
+
+.sw-mk-op .rota {
+  font-size: 10px;
+  color: #9fb3c8;
+}
+
+.sw-mk-op .lucro {
+  margin-left: auto;
+  text-align: right;
+  color: #2fe08a;
+  font-size: 13px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.sw-mk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(106px, 1fr));
+  gap: 5px;
+}
+
+.sw-mk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  border: 1px solid #2a2a33;
+  background: #131318;
+  padding: 6px;
+  cursor: pointer;
+  font-family: monospace;
+  color: #e5e7eb;
+  text-align: left;
+}
+
+.sw-mk-card:hover {
+  border-color: #fb923c;
+}
+
+.sw-mk-card.ativa {
+  border-color: #fb923c;
+  background: linear-gradient(180deg, #1d1710, #15130f);
+}
+
+.sw-mk-card .nome {
+  font-size: 10px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sw-mk-card .preco {
+  font-size: 13px;
+  color: #ffd7ad;
+}
+
+.sw-mk-delta {
+  font-size: 9px;
+}
+
+.sw-mk-delta.caro {
+  color: #ff6b7a;
+}
+
+.sw-mk-delta.barato {
+  color: #2fe08a;
+}
+
+.sw-mk-delta.neutro {
+  color: #9fb3c8;
+}
+
+.sw-mk-barra {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: #22222b;
+}
+
+.sw-mk-barra i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #fb923c, #ffd447);
+}
+
+.sw-mk-det {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 1px solid #2a2a33;
+  background: #121217;
+  padding: 10px;
+}
+
+.sw-mk-col {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sw-mk-col-mapa {
+  min-width: 300px;
+  max-width: 360px;
+}
+
+.sw-mk-det-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sw-mk-det-top .desc {
+  font-size: 11px;
+  color: #9fb3c8;
+  max-width: 300px;
+}
+
+.sw-mk-det-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #cdd6e0;
+}
+
+.sw-mk-det-stats b {
+  color: #ffd7ad;
+}
+
+.sw-mk-range {
+  position: relative;
+  height: 14px;
+  outline: 1px solid #2a2a33;
+  background: #17171d;
+}
+
+.sw-mk-range .fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #2fe08a, #ffd447, #ff4d5e);
+  opacity: 0.3;
+}
+
+.sw-mk-range .marca {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+
+.sw-mk-par {
+  font-size: 11px;
+  color: #cdd6e0;
+  border-left: 2px solid #2fe08a;
+  padding-left: 8px;
+}
+
+.sw-mk-par .lucro-txt {
+  color: #2fe08a;
+}
+
+.sw-mk-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 11px;
+}
+
+.sw-mk-linha {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border-bottom: 1px solid #1e1e26;
+  padding: 2px 0;
+}
+
+.sw-mk-linha .p {
+  margin-left: auto;
+  white-space: nowrap;
+  color: #e8edf2;
+}
+
+.sw-mk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.sw-mk-mapa {
+  background: #0b0b10;
+  border: 1px solid #2a2a33;
+  image-rendering: pixelated;
+  width: 100%;
+  height: auto;
+}

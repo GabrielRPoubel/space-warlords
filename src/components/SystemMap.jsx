@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import PlanetArt from './PlanetArt.jsx'
+import CinturaoArt from './CinturaoArt.jsx'
 import {
   COR_ELEMENTO,
   DESCR_ESTRELA,
+  MIX_CINTURAO,
   avaliarHabitabilidade,
   gerarRecursos,
 } from '../game/sim/system.js'
@@ -16,6 +18,7 @@ import {
 import {
   CLASSE_RIQUEZA,
   NOME_COLONIA,
+  NOME_ITEM,
   NOME_RIQUEZA,
   SIMBOLO_COLONIA,
   fmtPop,
@@ -37,20 +40,24 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
   const [zoomUi, setZoomUi] = useState(1)
   const colRef = useRef(null)
 
-  // planetas colonizados → anel na cor da nação + pontos (via ref)
-  colRef.current =
-    ecoSistema && dono
-      ? Object.fromEntries(
-          ecoSistema.planetas.map((p) => [
-            p.nome,
-            {
-              cor: dono.cor,
-              civ: p.edificios.filter((e) => e.tipo !== 'militar').length,
-              mil: p.edificios.filter((e) => e.tipo === 'militar').length,
-            },
-          ]),
-        )
-      : null
+  // planetas colonizados → anel na cor da nação + pontos; cinturões →
+  // estação de mineração (ou sonda de prospecção) desenhada no anel
+  colRef.current = (() => {
+    const mapa = {}
+    if (ecoSistema && dono) {
+      for (const p of ecoSistema.planetas)
+        mapa[p.nome] = {
+          cor: dono.cor,
+          civ: p.edificios.filter((e) => e.tipo !== 'militar').length,
+          mil: p.edificios.filter((e) => e.tipo === 'militar').length,
+        }
+      for (const es of ecoSistema.estacoes || []) {
+        const c = sistema.cinturoes?.[es.b]
+        if (c) mapa[c.nome] = { est: es.n, slots: es.slots, tipo: es.tipo }
+      }
+    }
+    return Object.keys(mapa).length ? mapa : null
+  })()
 
   const vistaRef = useRef({ ox: 0, oy: 0, escala: 1 })
   const escAlvo = useRef(1)
@@ -224,8 +231,13 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
       ? avaliarHabitabilidade(ficha.detalhe, estrela)
       : null
   const ehEstrela = ficha?.tipo === 'estrela'
+  const ehCinturao = ficha?.tipo === 'cinturao'
+  const beltInfo = ehCinturao ? sistema.cinturoes?.[ficha.b] : null
+  const beltEco = ehCinturao
+    ? ecoSistema?.estacoes?.find((e) => e.b === ficha.b) || null
+    : null
   const ecoPlaneta =
-    !ehEstrela && ecoSistema && ficha?.nome
+    !ehEstrela && !ehCinturao && ecoSistema && ficha?.nome
       ? ecoSistema.planetas.find((p) => p.nome === ficha.nome)
       : null
   // mundo civil: q a 1% do ideal, ainda não colonizado
@@ -270,7 +282,88 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
         <span className="sw-hint">WASD move · +/- ou scroll = zoom</span>
         <button onClick={onVoltar}>Voltar (Esc)</button>
       </div>
-      {ficha && (
+      {ficha && ehCinturao && beltInfo && (
+        <div className="sw-info">
+          <div className="sw-ficha-top">
+            <CinturaoArt
+              tipo={beltInfo.tipo}
+              seedSistema={sistema.seed}
+              nome={beltInfo.nome}
+              ativo={(beltEco?.n || 0) > 0}
+              size={200}
+            />
+            <div className="sw-ficha-id">
+              <strong>{beltInfo.nome}</strong>
+              <span>
+                cinturão de asteroides{' '}
+                {beltInfo.tipo === 'M'
+                  ? 'metálico (M)'
+                  : beltInfo.tipo === 'S'
+                    ? 'silicáceo (S)'
+                    : 'carbonáceo (C)'}
+              </span>
+              <span>
+                {beltInfo.au} AU · extensão {beltInfo.slots} estação(ões)
+              </span>
+              <span>
+                {beltEco && beltEco.n > 0
+                  ? `⛏ ${beltEco.n} estação(ões) de mineração ativas`
+                  : '◌ sem estações — só sonda de prospecção'}
+                {dono?.nome && beltEco?.n > 0 ? ` · ${dono.nome}` : ''}
+              </span>
+            </div>
+          </div>
+          <p className="sw-hint">composição real do cinturão</p>
+          <ul className="sw-rec-lista">
+            {Object.entries(MIX_CINTURAO[beltInfo.tipo] || {})
+              .sort((a, b) => b[1] - a[1])
+              .map(([el, v]) => {
+                const tot = Object.values(MIX_CINTURAO[beltInfo.tipo]).reduce(
+                  (a, b) => a + b,
+                  0,
+                )
+                const pct = (v / tot) * 100
+                return (
+                  <li key={el} className="sw-rec-linha">
+                    <span>
+                      {el} · {NOME_ITEM[el] || el}
+                    </span>
+                    <span className="sw-bar">
+                      <span
+                        className="sw-bar-fill"
+                        style={{
+                          width: `${Math.max(2, pct)}%`,
+                          background: COR_ELEMENTO[el] || '#888',
+                        }}
+                      />
+                    </span>
+                    <span>{pct.toFixed(1)}%</span>
+                  </li>
+                )
+              })}
+          </ul>
+          {beltEco && beltEco.n > 0 && (
+            <>
+              <p className="sw-hint">
+                produção estimada/tick · energia do sistema{' '}
+                {Math.round((ecoSistema?.fEne ?? 1) * 100)}% · consome{' '}
+                {(0.15 * beltEco.n).toFixed(2)} COMB
+              </p>
+              <ul className="sw-motivos">
+                {Object.entries(MIX_CINTURAO[beltInfo.tipo] || {})
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([el, v]) => (
+                    <li key={el} className="ok">
+                      {el} +{(v * beltEco.n * Math.max(0.25, ecoSistema?.fEne ?? 1)).toFixed(2)}/tick
+                    </li>
+                  ))}
+              </ul>
+            </>
+          )}
+          <button onClick={() => setSel(null)}>Fechar</button>
+        </div>
+      )}
+      {ficha && !ehCinturao && (
         <div className="sw-info">
           <div className="sw-ficha-top">
             <PlanetArt
@@ -424,11 +517,24 @@ export default function SystemMap({ sistema, estrela, onVoltar, ecoSistema, dono
                           ? 'silicáceo (metais + traços de Au/PGM)'
                           : 'carbonáceo (água, carbono, amônia)'
                     return (
-                      <li key={i} className="ok">
+                      <li
+                        key={i}
+                        className="ok"
+                        style={{ cursor: 'pointer' }}
+                        title="clique p/ abrir o cinturão"
+                        onClick={() =>
+                          setSel({
+                            nome: c.nome,
+                            tipo: 'cinturao',
+                            b: i,
+                            cor: '#9aa3b2',
+                          })
+                        }
+                      >
                         ◌ {c.nome} · {nomeTipo} ·{' '}
                         {es
-                          ? `${es.n}/${es.slots} estação(ões) de mineração`
-                          : `${c.slots} estação(ões) possíveis`}
+                          ? `${es.n}/${es.slots} estação(ões) de mineração (abrir)`
+                          : `${c.slots} estação(ões) possíveis (abrir)`}
                       </li>
                     )
                   })}

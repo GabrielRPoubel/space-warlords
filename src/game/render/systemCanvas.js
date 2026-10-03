@@ -54,6 +54,49 @@ export function desenhar(canvas, sistema, estrela, selNome, vista, colonizados =
         2,
       )
     }
+    // marcador do cinturão (lado esquerdo): estação de mineração em
+    // pixel art quando há estações; sonda de prospecção quando vazio
+    const mA = Math.PI
+    const mx = Math.round(cx + Math.cos(mA) * r)
+    const my = Math.round(cy + Math.sin(mA) * r)
+    const est = colonizados?.[c.nome]?.est || 0
+    if (est > 0) {
+      ctx.fillStyle = '#5b6270'
+      ctx.fillRect(mx - 7, my + 2, 1, 3)
+      ctx.fillRect(mx, my + 2, 1, 3)
+      ctx.fillRect(mx + 6, my + 2, 1, 3)
+      ctx.fillStyle = '#8b93a3'
+      ctx.fillRect(mx - 8, my, 16, 2)
+      ctx.fillStyle = '#aab2c0'
+      ctx.fillRect(mx - 3, my - 5, 7, 5)
+      ctx.fillStyle = '#3d66c4'
+      ctx.fillRect(mx - 11, my - 4, 5, 2)
+      ctx.fillRect(mx + 6, my - 4, 5, 2)
+      ctx.fillStyle = '#d4dae4'
+      ctx.fillRect(mx - 1, my - 9, 1, 4)
+      ctx.fillStyle = '#ffd447'
+      ctx.fillRect(mx - 1, my - 10, 1, 1)
+      ctx.fillStyle = '#ff8a5c'
+      ctx.fillRect(mx + 6, my - 6, 2, 1)
+      ctx.fillRect(mx + 7, my - 7, 2, 1)
+    } else {
+      ctx.fillStyle = '#8892a6'
+      ctx.fillRect(mx - 2, my - 1, 4, 2)
+      ctx.fillStyle = '#d4dae4'
+      ctx.fillRect(mx, my - 4, 1, 3)
+      ctx.fillStyle = '#ff5d5d'
+      ctx.fillRect(mx, my - 5, 1, 1)
+    }
+    if (c.nome === selNome) {
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(mx - 13, my - 13, 26, 20)
+    }
+    if (esc > 0.6) {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'
+      ctx.font = '10px monospace'
+      ctx.fillText(`[${c.tipo}] ${c.nome}`, mx - 24, my + 16)
+    }
   }
 
   const todos = [
@@ -184,6 +227,21 @@ export function desenhar(canvas, sistema, estrela, selNome, vista, colonizados =
         ...p,
         sx: cx + Math.cos(p.angulo) * r,
         sy: cy + Math.sin(p.angulo) * r,
+      }
+    }),
+    ...sistema.cinturoes.map((c, b) => {
+      const r = raioTela(c.au, esc)
+      return {
+        nome: c.nome,
+        tipo: 'cinturao',
+        b,
+        cor: c.tipo === 'M' ? '#e5e4e2' : c.tipo === 'S' ? '#c9c9c9' : '#8a8072',
+        au: c.au,
+        angulo: Math.PI,
+        luas: [],
+        sx: cx + Math.cos(Math.PI) * r,
+        sy: cy + Math.sin(Math.PI) * r,
+        sraio: 16 * Math.min(1.6, esc),
       }
     }),
     corpoEstrela,

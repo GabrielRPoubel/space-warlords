@@ -916,7 +916,13 @@ export default function GalaxyMap() {
         ))}
       </div>
       {menuJogador && (
-        <div className="sw-painel-jogador">
+        <div
+          className={
+            menuJogador === 'comercio'
+              ? 'sw-painel-jogador sw-painel-largo'
+              : 'sw-painel-jogador'
+          }
+        >
           <h2>
             {{
               personagem: 'PERSONAGEM',
@@ -947,7 +953,13 @@ export default function GalaxyMap() {
               <p className="sw-hint">Sem piloto nesta campanha.</p>
             )
           ) : menuJogador === 'comercio' ? (
-            <ComercioGalaxia eco={din.eco} nacoes={dip.nacoes} />
+            <ComercioGalaxia
+              eco={din.eco}
+              nacoes={dip.nacoes}
+              stars={galaxia.stars}
+              dono={dip.dono}
+              meu={save?.origem}
+            />
           ) : (
             <p className="sw-hint">Em breve.</p>
           )}
